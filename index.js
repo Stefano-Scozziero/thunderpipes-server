@@ -34,7 +34,7 @@ app.post("/create_preference", async (req, res) => {
                 failure: `${FRONTEND_URL}/failure.html`,
                 pending: `${FRONTEND_URL}/pending.html`
             },
-            //auto_return: "approved",
+            auto_return: "approved",
         };
 
         const preference = new Preference(client);
