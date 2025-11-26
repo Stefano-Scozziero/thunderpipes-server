@@ -57,12 +57,12 @@ app.delete("/api/products/:id", async (req, res) => {
 // D. Mercado Pago (Tu lógica existente mejorada)
 app.post("/create_preference", async (req, res) => {
     try {
-        const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'; // Puerto default de Vite
+        const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
         
         const body = {
             items: req.body.items.map(item => ({
                 title: item.name,
-                quantity: 1,
+                quantity: Number(item.quantity),
                 unit_price: Number(item.price),
                 currency_id: "ARS",
             })),
