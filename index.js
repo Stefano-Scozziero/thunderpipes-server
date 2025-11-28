@@ -6,12 +6,20 @@ const mongoose = require("mongoose");
 const { MercadoPagoConfig, Preference } = require("mercadopago");
 const Product = require('./src/models/Product'); // Importamos el modelo nuevo
 
+const cookieParser = require('cookie-parser');
+const authRoutes = require('./src/routes/authRoutes');
+const productRoutes = require('./src/routes/productRoutes');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true // Permitir cookies
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 // 1. Conexión a MongoDB
 mongoose.connect(process.env.MONGO_URI)
@@ -22,21 +30,41 @@ mongoose.connect(process.env.MONGO_URI)
 const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
 
 // RUTAS DE LA API
-const productRoutes = require('./src/routes/productRoutes');
+app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 
 // D. Mercado Pago (Tu lógica existente mejorada)
 app.post("/create_preference", async (req, res) => {
+    let items = [];
     try {
         const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-        const body = {
-            items: req.body.items.map(item => ({
-                title: item.name,
+        // Validar que lleguen items
+        if (!req.body.items || req.body.items.length === 0) {
+            return res.status(400).json({ error: "No items provided" });
+        }
+
+        // Iterar sobre los items solicitados y buscar su precio real en la DB
+        for (const item of req.body.items) {
+            const product = await Product.findById(item._id);
+            if (!product) {
+                return res.status(404).json({ error: `Product not found: ${item._id}` });
+            }
+
+            items.push({
+                id: product._id.toString(),
+                title: product.name,
                 quantity: Number(item.quantity),
-                unit_price: Number(item.price),
+                unit_price: Number(product.price), // PRECIO REAL DE LA DB
                 currency_id: "ARS",
-            })),
+                picture_url: product.img // Opcional: enviar imagen a MP
+            });
+        }
+
+
+
+        const body = {
+            items: items,
             back_urls: {
                 success: `${FRONTEND_URL}/success`,
                 failure: `${FRONTEND_URL}/failure`,
@@ -50,7 +78,7 @@ app.post("/create_preference", async (req, res) => {
         res.json({ id: result.id });
 
     } catch (error) {
-        console.error(error);
+        console.error("Error creating preference:", error);
         res.status(500).json({ error: "Error al crear preferencia" });
     }
 });
