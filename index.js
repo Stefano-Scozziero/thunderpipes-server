@@ -70,8 +70,11 @@ app.post("/create_preference", async (req, res) => {
                 failure: `${FRONTEND_URL}/failure`,
                 pending: `${FRONTEND_URL}/pending`
             },
-            auto_return: "approved",
         };
+
+        if (!FRONTEND_URL.includes('localhost')) {
+            body.auto_return = "approved";
+        }
 
         const preference = new Preference(client);
         const result = await preference.create({ body });
@@ -79,6 +82,9 @@ app.post("/create_preference", async (req, res) => {
 
     } catch (error) {
         console.error("Error creating preference:", error);
+        if (error.response) {
+            console.error("MP Error Response:", JSON.stringify(error.response.data, null, 2));
+        }
         res.status(500).json({ error: "Error al crear preferencia" });
     }
 });
