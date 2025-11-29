@@ -7,19 +7,27 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 exports.login = async (req, res) => {
     try {
         const { username, password } = req.body;
+        console.log(`Login attempt for user: ${username}`);
         const user = await User.findOne({ username });
 
-        if (!user) return res.status(401).json({ error: "Credenciales inválidas" });
+        if (!user) {
+            console.log("User not found");
+            return res.status(401).json({ error: "Credenciales inválidas" });
+        }
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(401).json({ error: "Credenciales inválidas" });
+        if (!isMatch) {
+            console.log("Password mismatch");
+            return res.status(401).json({ error: "Credenciales inválidas" });
+        }
 
         const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
 
+        console.log("Login successful, setting cookie");
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'Lax', // Changed from 'strict' to 'Lax' for better compatibility
             maxAge: 24 * 60 * 60 * 1000 // 1 day
         });
 
@@ -37,12 +45,17 @@ exports.logout = (req, res) => {
 
 exports.checkAuth = (req, res) => {
     const token = req.cookies.token;
-    if (!token) return res.status(401).json({ authenticated: false });
+    if (!token) {
+        console.log("CheckAuth: No token found");
+        return res.status(401).json({ authenticated: false });
+    }
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
+        console.log("CheckAuth: Token verified for user", decoded.username);
         res.json({ authenticated: true, user: decoded });
     } catch (error) {
+        console.log("CheckAuth: Invalid token");
         res.status(401).json({ authenticated: false });
     }
 };
