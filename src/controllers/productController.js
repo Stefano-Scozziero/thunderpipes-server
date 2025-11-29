@@ -1,11 +1,13 @@
-const Product = require('../models/Product');
+const productService = require('../services/productService');
+const logger = require('../utils/logger');
 
 // Get all products
 exports.getProducts = async (req, res) => {
     try {
-        const products = await Product.find();
+        const products = await productService.getAllProducts();
         res.json(products);
     } catch (error) {
+        logger.error('Error fetching products', { error: error.message });
         res.status(500).json({ error: "Error fetching products" });
     }
 };
@@ -13,10 +15,11 @@ exports.getProducts = async (req, res) => {
 // Get single product
 exports.getProductById = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const product = await productService.getProductById(req.params.id);
         if (!product) return res.status(404).json({ error: "Product not found" });
         res.json(product);
     } catch (error) {
+        logger.error('Error fetching product', { id: req.params.id, error: error.message });
         res.status(500).json({ error: "Error fetching product" });
     }
 };
@@ -24,25 +27,22 @@ exports.getProductById = async (req, res) => {
 // Create product
 exports.createProduct = async (req, res) => {
     try {
-        const newProduct = new Product(req.body);
-        const savedProduct = await newProduct.save();
+        const savedProduct = await productService.createProduct(req.body);
         res.status(201).json(savedProduct);
     } catch (error) {
+        logger.error('Error creating product', { error: error.message });
         res.status(400).json({ error: "Error creating product", details: error.message });
     }
 };
 
-// Update product (NEW FEATURE)
+// Update product
 exports.updateProduct = async (req, res) => {
     try {
-        const updatedProduct = await Product.findByIdAndUpdate(
-            req.params.id,
-            { $set: req.body },
-            { new: true, runValidators: true }
-        );
+        const updatedProduct = await productService.updateProduct(req.params.id, req.body);
         if (!updatedProduct) return res.status(404).json({ error: "Product not found" });
         res.json(updatedProduct);
     } catch (error) {
+        logger.error('Error updating product', { id: req.params.id, error: error.message });
         res.status(400).json({ error: "Error updating product", details: error.message });
     }
 };
@@ -50,10 +50,11 @@ exports.updateProduct = async (req, res) => {
 // Delete product
 exports.deleteProduct = async (req, res) => {
     try {
-        const deletedProduct = await Product.findByIdAndDelete(req.params.id);
+        const deletedProduct = await productService.deleteProduct(req.params.id);
         if (!deletedProduct) return res.status(404).json({ error: "Product not found" });
         res.json({ message: "Product deleted successfully" });
     } catch (error) {
+        logger.error('Error deleting product', { id: req.params.id, error: error.message });
         res.status(500).json({ error: "Error deleting product" });
     }
 };
