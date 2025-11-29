@@ -35,7 +35,7 @@ const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN 
 
 // RUTAS DE LA API
 app.use('/api/auth', authRoutes);
-app.use('/api/products', cache('5 minutes'), productRoutes);
+app.use('/api/products', productRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/products/:productId/reviews', reviewRoutes);
 
