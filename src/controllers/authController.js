@@ -26,8 +26,8 @@ exports.login = async (req, res) => {
         console.log("Login successful, setting cookie");
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax', // Changed from 'strict' to 'Lax' for better compatibility
+            secure: process.env.NODE_ENV === 'production', // True en producción (HTTPS)
+            sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // 'None' para cross-domain en prod
             maxAge: 24 * 60 * 60 * 1000 // 1 day
         });
 

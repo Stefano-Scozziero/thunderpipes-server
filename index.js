@@ -11,7 +11,9 @@ const authRoutes = require('./src/routes/authRoutes');
 const productRoutes = require('./src/routes/productRoutes');
 
 const app = express();
+app.set('trust proxy', 1); // Necesario para cookies seguras en Render/Vercel
 const port = process.env.PORT || 3000;
+console.log("Environment:", process.env.NODE_ENV);
 
 // Middleware
 app.use(cors({
