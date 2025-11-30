@@ -28,7 +28,9 @@ app.use(cors({
         'https://thunderpipes-client.vercel.app',
         process.env.FRONTEND_URL
     ].filter(Boolean),
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(helmet());
@@ -50,6 +52,7 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/products/:productId/reviews', reviewRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
+app.post('/webhook', require('./controllers/paymentController').receiveWebhook);
 app.use('/', paymentRoutes); // Mounts /create_preference
 
 module.exports = app;

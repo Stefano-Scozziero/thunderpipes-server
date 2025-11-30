@@ -1,4 +1,4 @@
-const { MercadoPagoConfig, Preference } = require("mercadopago");
+const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 
@@ -79,6 +79,10 @@ exports.createPreference = async (req, res) => {
             body.auto_return = "approved";
         }
 
+        // Webhook URL (Must be HTTPS and public)
+        const BACKEND_URL = process.env.BACKEND_URL || "https://thunderpipes-server.onrender.com";
+        body.notification_url = `${BACKEND_URL}/webhook`;
+
         const preference = new Preference(client);
         const result = await preference.create({ body });
         res.json({ id: result.id });
@@ -89,5 +93,30 @@ exports.createPreference = async (req, res) => {
             console.error("MP Error Response:", JSON.stringify(error.response.data, null, 2));
         }
         res.status(500).json({ error: "Error al crear preferencia" });
+    }
+};
+
+exports.receiveWebhook = async (req, res) => {
+    const { query } = req;
+    const topic = query.topic || query.type;
+
+    try {
+        if (topic === "payment") {
+            const paymentId = query.id || query['data.id'];
+            const payment = await new Payment(client).get({ id: paymentId });
+
+            const { status, external_reference } = payment;
+
+            if (external_reference) {
+                await Order.findByIdAndUpdate(external_reference, {
+                    status: status === 'approved' ? 'paid' : status
+                });
+                console.log(`Order ${external_reference} updated to ${status}`);
+            }
+        }
+        res.sendStatus(200);
+    } catch (error) {
+        console.error("Webhook error:", error);
+        res.sendStatus(500);
     }
 };
