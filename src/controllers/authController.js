@@ -1,14 +1,25 @@
 const authService = require('../services/authService');
 const logger = require('../utils/logger');
 
+exports.register = async (req, res) => {
+    try {
+        const { username, password, email, address } = req.body;
+        await authService.register({ username, password, email, address });
+        res.status(201).json({ message: "Usuario registrado exitosamente" });
+    } catch (error) {
+        logger.error("Register error:", { error: error.message });
+        res.status(400).json({ error: error.message });
+    }
+};
+
 exports.login = async (req, res) => {
     try {
         const { username, password } = req.body;
-        logger.info(`Login attempt for user: ${username}`);
+        //logger.info(`Login attempt for user: ${username}`);
 
         const { user, token } = await authService.login(username, password);
 
-        logger.info("Login successful, setting cookie");
+        //logger.info("Login successful, setting cookie");
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -16,7 +27,15 @@ exports.login = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000 // 1 day
         });
 
-        res.json({ message: "Login exitoso", user: { username: user.username } });
+        res.json({
+            message: "Login exitoso",
+            user: {
+                username: user.username,
+                role: user.role,
+                email: user.email,
+                address: user.address
+            }
+        });
     } catch (error) {
         logger.error("Login error:", { error: error.message });
         res.status(401).json({ error: error.message });

@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
-module.exports = (req, res, next) => {
+const authMiddleware = (req, res, next) => {
     const token = req.cookies.token;
 
     if (!token) {
@@ -17,3 +17,13 @@ module.exports = (req, res, next) => {
         res.status(401).json({ error: "Token inválido" });
     }
 };
+
+authMiddleware.isAdmin = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+        next();
+    } else {
+        res.status(403).json({ error: "Acceso denegado. Requiere rol de administrador." });
+    }
+};
+
+module.exports = authMiddleware;
